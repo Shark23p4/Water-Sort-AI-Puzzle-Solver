@@ -148,27 +148,27 @@ class WaterSortSearch {
 
     // Method to generate all possible moves and return a tree of moves
     public node generateMoveTree(String initialState) {
-        List<Stack<Character>> initialBottles = parseInitialState(initialState);
+        bottles = parseInitialState(initialState);
         bottleCapacity = getBottleCapacity(initialState); // Derive bottleCapacity from initialState
-        node root = new node(encodeState(initialBottles));
+        node root = new node(encodeState(bottles));
         Set<String> visitedStates = new HashSet<>();
-        generateMoves(root, initialBottles, visitedStates);
+        generateMoves(root, bottles, visitedStates);
         return root;
     }
 
     // Recursive method to generate possible moves for a given state, avoiding
     // repeated states and stopping at goal state
-    private void generateMoves(node node, List<Stack<Character>> bottles,
+    private void generateMoves(node node, List<Stack<Character>> currBottles,
             Set<String> visitedStates) {
         int numberOfBottles = bottles.size();
 
         // Check if the current state is a goal state
-        if (isGoalState(bottles)) {
+        if (isGoalState(currBottles)) {
             node.setGoal(true);
             return; // Stop recursion if the goal state is reached
         }
 
-        String currentState = encodeState(bottles);
+        String currentState = encodeState(currBottles);
         visitedStates.add(currentState); // Mark current state as visited
 
         // Generate all valid moves and create child nodes
@@ -269,8 +269,7 @@ class WaterSortSearch {
     }
 
     public static void main(String[] args) {
-        System.out.println(".()");
-        String initialState = "5;4;r,g,g,g;b,g,g,g;y,y,r,g;g,g,g,g;r,g,r,e,e";
+        String initialState = "5;4;r,g,e,e;b,g,e,e;y,e,e,e;b,r,e,e;r,g,e,e";
 
         String searchType = "BF"; // Example input startegy
 
@@ -291,12 +290,19 @@ class BFS {
         StringBuilder plan = new StringBuilder();
         int pathCost = 0;
 
-        Queue<node> frontier = new LinkedList<>();
+        Queue<TreeNode> frontier = new LinkedList<>();
+        Set<TreeNode> explored = new HashSet<>();
         frontier.add(searchTree);
 
         while (!frontier.isEmpty()) {
-            node currentNode = frontier.poll();
+            TreeNode currentNode = frontier.poll();
+            explored.add(currentNode);
             nodesExpanded++;
+
+            // Visualize current state
+            if (visualize) {
+                System.out.println("Exploring: " + currentNode.state);
+            }
 
             // Check if the current node is the goal
             if (currentNode.isGoal()) {
@@ -305,43 +311,46 @@ class BFS {
                 return plan.toString() + ";" + pathCost + ";" + nodesExpanded; // Return the result
             }
 
-            // Add all children to the frontier
-            for (node neighbor : currentNode.children) {
-                neighbor.parent = currentNode; // Set the parent for path reconstruction
-                frontier.add(neighbor);
+            // Add all unvisited children to the frontier
+            for (TreeNode neighbor : currentNode.children) {
+                if (!explored.contains(neighbor) && !frontier.contains(neighbor)) {
+                    neighbor.action = currentNode.action; // Set the action that led to this node
+                    frontier.add(neighbor);
+                }
             }
         }
 
         return "NOSOLUTION"; // Return if no solution is found
     }
 
-    private static String generatePlan(node node) {
+    private static String generatePlan(TreeNode node) {
         // Generate a solution plan based on the node's path from the root
         List<String> moves = new ArrayList<>();
-        node current = node;
+        TreeNode current = node;
 
-        // Backtrack to reconstruct the path from the goal to the root
+        // Assuming each node has a reference to its parent (not shown in TreeNode)
         while (current != null) {
             if (!current.action.isEmpty()) {
                 moves.add(current.action); // Collect the action
             }
-            current = current.parent; // Move to the parent node
+            current = null; // Replace with current.parent if parent reference is added
         }
 
         Collections.reverse(moves); // Reverse to get path from root to goal
         return String.join(",", moves); // Join moves with commas
     }
 
-    private static int calculatePathCost(node node) {
+    private static int calculatePathCost(TreeNode node) {
         // Calculate path cost based on the depth of the node
         int cost = 0;
-        node current = node;
+        TreeNode current = node;
 
-        // Count the number of edges from the root to the goal node
+        // Assuming each move has a uniform cost of 1 (or customize if needed)
         while (current != null) {
             cost += 1; // Increment cost for each level
-            current = current.parent; // Move to the parent node
+            current = null; // Replace with current.parent if parent reference is added
         }
         return cost - 1; // Subtract 1 to avoid counting the goal node itself
     }
+
 }
